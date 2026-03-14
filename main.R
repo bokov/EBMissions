@@ -1,0 +1,90 @@
+# Requirements:
+# An R script that generates a directed graph of hiding spots for an Easter egg
+# hunt or scavenger hunt. Each node in this graph has two core pieces of data:
+# its actual hiding spot and one or clues leading to that hiding spot. An Easter
+# egg placed on that spot is supposed to contain the clues belonging to eggs to
+# which it's connected by outgoing edges. Those eggs in turn will contain the
+# clues of the eggs they lead to and so on.
+#
+# This script will output a graphviz dot file, an SVG representative of the
+# graph, and a data frame with location one column and all the clues leading out
+# from that location in the second column exported as a spreadsheet.
+#
+# The input for the script is a spreadsheet with a column for hiding spot, a
+# column for clues that lead to that spot (optionally several, separated by
+# colons), a column setting the maximum incoming edges, a column setting the
+# maximum number of outgoing edges, and a column specifying subcluster
+#
+# The script then randomly connects the nodes together while observing the
+# maximum inbound and maximum outbound constraints. The minimum number of
+# inbound edges should be 1 unless explicitly specified as 0. In addition, the
+# subclusters value is split by colons and nodes are only permitted to connect
+# to each other if they have at least one subcluster in common. For example maybe
+# all the indoor eggs have the "indoor" subcluster tag and can only link to each
+# other, while eggs with a "yard" subcluster tag only connect to each other. The
+# two subclusters can be bridged by eggs which contain both the "indoor" and the
+# "yard" tags. If an egg has an empty subclusters field, it is assigned to the
+# 'DEFAULT' subcluster. An egg can bridge to the 'DEFAULT' subcluster by
+# explicitly having it as one of the tags in its subclusters field.
+#
+
+# Coding style:
+#   * treat R's optional use of `;` to indicate the end of an expression as mandatory
+#   * when breaking lines, do so before a comma but after other symbols
+#   * never use single character variable names-- instead double up the character (e.g. instead of x use xx, instead of i use ii)
+#   * above each function write a very short comment stating the function's purpose, what kind of input it expects, and what kind of output it returns.
+#   * within any large function (20 lines or more not counting comments) identify different steps (step being an informal concept of one or more functionally related expressions or pipelines or a group of repetitive expressions or pipelines) and separate steps from each other by blank lines. Above each step, write a very brief comment saying what it does
+#   * designate new sections like this: `# Section Name ----`
+#   * when creating horizontal line comments, do not use `-` or `=`, use `_` or `.`
+#
+# Implementation Requirements:
+#   * wherever using a function provided by an existing library would shorten the total code in this script, do so.
+#   * never create a function that is only used once with the exception of multi-line functions that need to be used inside of lapply or sapply
+#   * do not write functions to replace one-liner or two-liner code which is used two times or less
+#   * use dplyr pipelines wherever this will result in less code or in more readable code.
+#   * Remember that a frequently used pipeline e.g. `mytable %>% foo %>% bar %>% baz` can be easily turned into a reusable function without writing a wrapper by simply replacing the first step with `.` and assigning it to an object, e.g. `mypipeline <- . %>% foo %>% bar %>% baz`
+
+# Examples of stuff not to do ----
+
+## This is an example of a wrapper function that should not be written because
+## it's just moving code around instead of truly shortening it. Instead,
+## eval_tidy(f_rhs(...), data = ...) should be used inline
+# formula_value <- function(formula_object, data_list = list()) {
+#   eval_tidy(f_rhs(formula_object), data = data_list)
+# }
+
+## This is an example of a wrapper function that should not be written because
+## this operator is already provided by rlang
+# `%||%` <- function(left_value, right_value) {
+#   if (is.null(left_value)) right_value else left_value
+# }
+
+## This is an example of a wrapper function that should not be written because
+## there already is a coalesce function provided by dplyr and that should be
+## used instead
+# coalesce_num <- function(value, default_value = 0) {
+#   ifelse(is.na(value), default_value, value)
+# }
+
+
+
+# Do you understand all the above? Do you have any questions or suggestions?
+
+
+# libraries ----
+library(rio);        # one-stop shop for reading and writing files via import and export
+library(tidyverse);  # makes R suck even less than it already does
+
+# global variables ----
+data_path <- NULL;
+
+# read in data ----
+# Read the data. If none specified, generate an example input table as specified above
+if(!is.null(data_path) && file.exists(data_path)){ dat0 <- import(data_path)
+} else {
+  dat0 <- tribble(
+    # TODO NEXT:
+    # populate this table with the columns specified in Requirements above
+  )
+}
+

@@ -83,8 +83,101 @@ data_path <- NULL;
 if(!is.null(data_path) && file.exists(data_path)){ dat0 <- import(data_path)
 } else {
   dat0 <- tribble(
-    # TODO NEXT:
-    # populate this table with the columns specified in Requirements above
-  )
+  ~hiding_spot,       ~clues_to_this_spot,                    ~max_incoming_edges, ~max_outgoing_edges, ~subclusters,
+
+  "Kitchen sink",     "Look where water flows",                           1,                   2,   "indoors",
+  "Big oak tree",     "Roots of wisdom",                                  1,                   1,   "yard",
+  "Back door",        "Exit where inside meets outside",                  2,                   1,   "indoors:yard",
+  "Front porch",      "Take a seat in the open",                          1,                   1,   "DEFAULT",
+  "Couch",            "Soft and comfy",                                   1,                   3,   "indoors",
+  "Garage",           "Where things are stored",                          1,                   1,   "DEFAULT:indoors",
+  "Garden shed",      "Tools of the trade",                               0,                   2,   "yard",
+  "Bedroom closet",   "Hidden in plain sight",                            1,                   0,   "indoors"
+);
 }
 
+
+# Input Validation ----
+
+# Function: validate_input_table
+# Purpose: Check that input table has all required columns with correct types. Input: data frame, Output: TRUE or error.
+validate_input_table <- function(tbl){
+  required_cols <- c("hiding_spot", "clues_to_this_spot", "max_incoming_edges", "max_outgoing_edges", "subclusters");
+
+  missing_cols <- setdiff(required_cols, names(tbl));
+  if(length(missing_cols) > 0){
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "));
+  }
+
+  if(!is.character(tbl$hiding_spot)){
+    stop("Column 'hiding_spot' must be character");
+  }
+  if(!is.character(tbl$clues_to_this_spot)){
+    stop("Column 'clues_to_this_spot' must be character");
+  }
+  if(!is.numeric(tbl$max_incoming_edges)){
+    stop("Column 'max_incoming_edges' must be numeric");
+  }
+  if(!is.numeric(tbl$max_outgoing_edges)){
+    stop("Column 'max_outgoing_edges' must be numeric");
+  }
+  if(!is.character(tbl$subclusters)){
+    stop("Column 'subclusters' must be character");
+  }
+
+  if(any(tbl$max_incoming_edges < 0) || any(tbl$max_outgoing_edges < 0)){
+    stop("max_incoming_edges and max_outgoing_edges must be non-negative");
+  }
+
+  if(any(duplicated(tbl$hiding_spot))){
+    stop("hiding_spot values must be unique");
+  }
+
+  TRUE;
+};
+
+# Subcluster Processing and Node Eligibility ----
+
+# Function: process_subclusters
+# Purpose: Split subclusters by ':' and assign DEFAULT where needed. Input: data frame, Output: data frame with subcluster_vec list column.
+process_subclusters <- function(tbl){
+  tbl %>% mutate(
+    subcluster_vec = ifelse(
+      is.na(subclusters) | subclusters == "",
+      list("DEFAULT"),
+      strsplit(subclusters, ":")
+    )
+  );
+};
+
+# Function: find_eligible_targets Purpose: For each node, determine which other
+# nodes it can connect to based on subcluster overlap. Input: processed data
+# frame, Output: data frame with eligible_targets list column.
+find_eligible_targets <- function(tbl){
+  nn_nodes <- nrow(tbl);
+
+  tbl %>%
+    mutate(
+      eligible_targets = map(
+        subcluster_vec,
+        function(sspot){
+          which(
+            map_lgl(
+              tbl$subcluster_vec,
+              function(ttarget){
+                length(intersect(sspot, ttarget)) > 0;
+              }
+            )
+          );
+        }
+      )
+    );
+};
+
+# Process and prepare data ----
+dat0 %>% validate_input_table();
+dat1 <- dat0 %>% process_subclusters();
+dat2 <- dat1 %>% find_eligible_targets();
+
+# Preview processed data ----
+dat2 %>% select(hiding_spot, subcluster_vec, eligible_targets);

@@ -1,25 +1,34 @@
 # Todo List for Easter Egg Hunt Graph Generator
 
-Based on the specs and current progress in main.R, here's a todo list for completing the Easter egg hunt graph generator:
+Based on the specs and current progress in main.R, here's a hierarchical checklist for completing the Easter egg hunt graph generator:
 
-1. **Implement graph construction logic**: Create a function to randomly connect nodes (hiding spots) into a directed graph, respecting max incoming/outgoing edges, min incoming edges (1 unless 0), and eligible targets based on subclusters. Use the processed data (dat2) as input.
+## Data Processing and Validation
+- [x] **Modify input columns**: Add a `node_id` column (unique string based on hiding spot, e.g., sanitized version of hiding_spot) and an `outgoing_nodes` column (colon-delimited node_ids, can be empty for no pre-defined edges).
+- [x] **Implement input validation**: Create function to check required columns and types (now including node_id and outgoing_nodes).
+- [x] **Process subclusters**: Split subclusters by ':' and assign DEFAULT where needed.
+- [x] **Determine eligible targets**: For each node, find connectable nodes based on subcluster overlap.
 
-2. **Handle edge constraints and randomization**: Ensure connections are acyclic or handle cycles if needed; implement retry logic for failed connections due to constraints; validate the final graph meets all rules.
+## Graph Construction
+- [x] **Implement graph construction logic**: Create a function to randomly connect nodes respecting max incoming/outgoing edges, min incoming edges, and eligible targets.
+- [x] **Handle edge constraints and randomization**: Ensure connections respect constraints; implement retry logic for failed connections; validate final graph.
+- [x] **Honor pre-defined outgoing nodes**: 
+  - Parse outgoing_nodes column to get pre-defined edges (as node_id strings).
+  - Treat pre-defined edges as already assigned (count toward max_outgoing_edges), but allow them to override constraints (e.g., ignore subcluster eligibility or max edges for pre-defined).
+  - For nodes with blank outgoing_nodes, fill randomly as before.
+  - Add additional random outgoing edges only if max_outgoing_edges permits after pre-defined.
 
-3. **Generate Graphviz DOT file**: Write a function to output the graph as a DOT file, including nodes (hiding spots and clues) and directed edges.
+## Output Generation
+- [x] **Update output dataframe**: Ensure output has all input columns (strict superset) plus any additional (e.g., outgoing_clues). Populate outgoing_nodes with colon-delimited node_ids of all assigned outgoing connections (no blanks).
+- [x] **Generate Graphviz DOT file**: Write function to output graph as DOT file with nodes and directed edges.
+- [x] **Generate SVG visualization**: Use system call to Graphviz to convert DOT to SVG.
+- [x] **Create output data frame**: Build data frame with hiding spots and concatenated outgoing clues.
+- [x] **Export spreadsheet**: Use rio::export to save data frame as CSV.
 
-4. **Generate SVG visualization**: Use a library (e.g., DiagrammeR or system call to Graphviz) to convert the DOT file to SVG.
+## Integration and Execution
+- [x] **Add main execution flow**: Integrate all steps into cohesive script with error handling.
+- [x] **Add command-line or configurable input**: Allow data_path, output_dir, seed via arguments.
 
-5. **Create output data frame**: Build a data frame with one column for hiding spots and another for concatenated clues leading out from each spot (based on outgoing edges).
-
-6. **Export spreadsheet**: Use rio::export to save the data frame as a spreadsheet (e.g., CSV or XLSX).
-
-7. **Add main execution flow**: Integrate all steps into a cohesive script that reads input, processes data, builds graph, generates outputs, and handles errors.
-
-8. **Test with example data**: Run the full script on the provided example to verify outputs and constraints. (done — script now builds a graph without constraint warnings.)
-
-9. **Persist output artifacts**: Add functionality to write the graph as a DOT file, render an SVG, and export the clue graph as a spreadsheet.
-
-10. **Add command-line or configurable input**: Allow `data_path` to be set via arguments or environment for real input files.
-
-11. **Code review and cleanup**: Ensure adherence to coding style (e.g., mandatory semicolons, line breaks, comments); remove unused code; optimize for readability.
+## Testing and Quality
+- [x] **Test with example data**: Run script on provided example to verify outputs and constraints.
+- [x] **Persist output artifacts**: Write DOT file, render SVG, export clue graph as spreadsheet.
+- [x] **Code review and cleanup**: Ensure adherence to coding style; remove unused code; optimize readability.

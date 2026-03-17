@@ -88,10 +88,15 @@ if(length(args) > 0){
       cat("Usage: Rscript main.R [--data=path] [--output=dir] [--seed=num]\n");
       quit(status = 0);
     }
-    if(grepl("^--data=", arg)) data_path <- sub("^--data=", "", arg);
-    else if(grepl("^--output=", arg)) output_dir <- sub("^--output=", "", arg);
-    else if(grepl("^--seed=", arg)) seed <- as.integer(sub("^--seed=", "", arg));
-    else stop("Unknown argument: ", arg);
+    if(grepl("^--data=", arg)){
+      data_path <- sub("^--data=", "", arg);
+    } else if(grepl("^--output=", arg)){
+      output_dir <- sub("^--output=", "", arg);
+    } else if(grepl("^--seed=", arg)){
+      seed <- as.integer(sub("^--seed=", "", arg));
+    } else {
+      stop("Unknown argument: ", arg);
+    }
   }
 }
 
@@ -102,26 +107,26 @@ if(!is.null(seed)) set.seed(seed);
 if(!is.null(data_path) && file.exists(data_path)){ dat0 <- import(data_path)
 } else {
   dat0 <- tribble(
-  ~hiding_spot,       ~clues_to_this_spot,                    ~max_incoming_edges, ~max_outgoing_edges, ~subclusters,
+  ~hiding_spot,       ~clues_to_this_spot,                    ~max_incoming_edges, ~max_outgoing_edges, ~subclusters, ~node_id, ~outgoing_nodes,
 
-  "Kitchen sink",     "Look where water flows",                           1,                   2,   "indoors",
-  "Big oak tree",     "Roots of wisdom",                                  1,                   1,   "yard",
-  "Back door",        "Exit where inside meets outside",                  2,                   1,   "indoors:yard",
-  "Front porch",      "Take a seat in the open",                          1,                   1,   "DEFAULT",
-  "Couch",            "Soft and comfy",                                   1,                   3,   "indoors",
-  "Garage",           "Where things are stored",                          1,                   1,   "DEFAULT:indoors",
-  "Garden shed",      "Tools of the trade",                               0,                   2,   "yard",
-  "Bedroom closet",   "Hidden in plain sight",                            1,                   0,   "indoors",
-  "Bookshelf",       "Knowledge lives here",                           1,                   2,   "indoors",
-  "Under stairs",    "Where shadows gather",                          1,                   2,   "indoors",
-  "Pool",            "Water and sun",                                 1,                   2,   "yard",
-  "Mailbox",         "Letters arrive",                                1,                   2,   "DEFAULT",
-  "Treehouse",       "High and cozy",                                  1,                   2,   "yard",
-  "Fireplace",       "Warmth at night",                               1,                   2,   "indoors",
-  "Toolbox",         "Fix what breaks",                               1,                   2,   "indoors:yard",
-  "Gazebo",          "Shelter in the yard",                           1,                   2,   "yard:DEFAULT",
-  "Attic",           "Up above",                                      1,                   1,   "indoors",
-  "Basement",        "Below ground",                                  1,                   1,   "indoors:DEFAULT"
+  "Kitchen sink",     "Look where water flows",                           1,                   2,   "indoors", "kitchen_sink", "",
+  "Big oak tree",     "Roots of wisdom",                                  1,                   1,   "yard", "big_oak_tree", "",
+  "Back door",        "Exit where inside meets outside",                  2,                   1,   "indoors:yard", "back_door", "",
+  "Front porch",      "Take a seat in the open",                          1,                   1,   "DEFAULT", "front_porch", "",
+  "Couch",            "Soft and comfy",                                   1,                   3,   "indoors", "couch", "",
+  "Garage",           "Where things are stored",                          1,                   1,   "DEFAULT:indoors", "garage", "",
+  "Garden shed",      "Tools of the trade",                               0,                   2,   "yard", "garden_shed", "",
+  "Bedroom closet",   "Hidden in plain sight",                            1,                   0,   "indoors", "bedroom_closet", "",
+  "Bookshelf",       "Knowledge lives here",                           1,                   2,   "indoors", "bookshelf", "",
+  "Under stairs",    "Where shadows gather",                          1,                   2,   "indoors", "under_stairs", "",
+  "Pool",            "Water and sun",                                 1,                   2,   "yard", "pool", "",
+  "Mailbox",         "Letters arrive",                                1,                   2,   "DEFAULT", "mailbox", "",
+  "Treehouse",       "High and cozy",                                  1,                   2,   "yard", "treehouse", "",
+  "Fireplace",       "Warmth at night",                               1,                   2,   "indoors", "fireplace", "",
+  "Toolbox",         "Fix what breaks",                               1,                   2,   "indoors:yard", "toolbox", "",
+  "Gazebo",          "Shelter in the yard",                           1,                   2,   "yard:DEFAULT", "gazebo", "",
+  "Attic",           "Up above",                                      1,                   1,   "indoors", "attic", "",
+  "Basement",        "Below ground",                                  1,                   1,   "indoors:DEFAULT", "basement", ""
 );
 }
 
@@ -131,7 +136,7 @@ if(!is.null(data_path) && file.exists(data_path)){ dat0 <- import(data_path)
 # Function: validate_input_table
 # Purpose: Check that input table has all required columns with correct types. Input: data frame, Output: TRUE or error.
 validate_input_table <- function(tbl){
-  required_cols <- c("hiding_spot", "clues_to_this_spot", "max_incoming_edges", "max_outgoing_edges", "subclusters");
+  required_cols <- c("hiding_spot", "clues_to_this_spot", "max_incoming_edges", "max_outgoing_edges", "subclusters", "node_id", "outgoing_nodes");
 
   missing_cols <- setdiff(required_cols, names(tbl));
   if(length(missing_cols) > 0){
@@ -153,6 +158,12 @@ validate_input_table <- function(tbl){
   if(!is.character(tbl$subclusters)){
     stop("Column 'subclusters' must be character");
   }
+  if(!is.character(tbl$node_id)){
+    stop("Column 'node_id' must be character");
+  }
+  if(!is.character(tbl$outgoing_nodes)){
+    stop("Column 'outgoing_nodes' must be character");
+  }
 
   if(any(tbl$max_incoming_edges < 0) || any(tbl$max_outgoing_edges < 0)){
     stop("max_incoming_edges and max_outgoing_edges must be non-negative");
@@ -160,6 +171,10 @@ validate_input_table <- function(tbl){
 
   if(any(duplicated(tbl$hiding_spot))){
     stop("hiding_spot values must be unique");
+  }
+
+  if(any(duplicated(tbl$node_id))){
+    stop("node_id values must be unique");
   }
 
   TRUE;
@@ -226,18 +241,31 @@ build_graph <- function(dat, max_attempts = 100){
     adj <- vector("list", nn);
     incoming <- rep(0, nn);
     outgoing <- rep(0, nn);
+
+    # Add pre-defined edges (override constraints)
+    for (ii in 1:nn){
+      if(dat$outgoing_nodes[ii] != ""){
+        pre_targets <- strsplit(dat$outgoing_nodes[ii], ":")[[1]];
+        pre_indices <- match(pre_targets, dat$node_id);
+        if(any(is.na(pre_indices))) stop("Invalid node_id in outgoing_nodes for ", dat$hiding_spot[ii]);
+        adj[[ii]] <- pre_indices;
+        incoming[pre_indices] <- incoming[pre_indices] + 1;
+        outgoing[ii] <- outgoing[ii] + length(pre_indices);
+      }
+    }
+
     node_order <- sample(1:nn);  # randomize order
 
-    # Assign outgoing edges greedily
+    # Assign additional outgoing edges greedily
     for (ii in node_order){
-      max_out <- dat$max_outgoing_edges[ii];
+      max_out <- dat$max_outgoing_edges[ii] - outgoing[ii];  # remaining after pre-defined
       eligible <- dat$eligible_targets[[ii]];
       eligible <- setdiff(eligible, ii);  # no self-loops
       candidates <- eligible[incoming[eligible] < dat$max_incoming_edges[eligible]];
-      num_to_add <- min(max_out - outgoing[ii], length(candidates));
+      num_to_add <- min(max_out, length(candidates));
       if (num_to_add > 0){
         selected <- sample(candidates, num_to_add);
-        adj[[ii]] <- selected;
+        adj[[ii]] <- c(adj[[ii]], selected);
         incoming[selected] <- incoming[selected] + 1;
         outgoing[ii] <- outgoing[ii] + num_to_add;
       }
@@ -260,7 +288,7 @@ build_graph <- function(dat, max_attempts = 100){
     # Validate degrees
     degrees_out <- outgoing;
     degrees_in <- incoming;
-    degrees_ok <- all(degrees_in <= dat$max_incoming_edges) && all(degrees_out <= dat$max_outgoing_edges);
+    degrees_ok <- all(degrees_out <= dat$max_outgoing_edges);  # pre-defined may cause incoming > max, so don't check incoming
 
     if (all(dat$max_incoming_edges == 0 | incoming >= 1) && degrees_ok){
       is_valid <- TRUE;
@@ -300,13 +328,13 @@ build_dot_string <- function(dat, adj){
 };
 
 # Function: build_clue_table
-# Purpose: Build a table where each row is a hiding spot and the outgoing clues it provides. Input: data frame and adjacency list, Output: tibble.
-build_clue_table <- function(dat, adj){
-  tibble::tibble(
-    hiding_spot = dat$hiding_spot,
-    outgoing_spots = map_chr(adj, ~ if(length(.x) == 0) "" else paste(dat$hiding_spot[.x], collapse = " | ")),
-    outgoing_clues = map_chr(adj, ~ if(length(.x) == 0) "" else paste(dat$clues_to_this_spot[.x], collapse = " | "))
-  );
+# Purpose: Build a table with all input columns plus populated outgoing_nodes and outgoing_clues. Input: dat0, dat2, adj, Output: tibble.
+build_clue_table <- function(dat0, dat2, adj){
+  dat0 %>%
+    mutate(
+      outgoing_nodes = map_chr(adj, ~ if(length(.x) == 0) "" else paste(dat2$node_id[.x], collapse = ":")),
+      outgoing_clues = map_chr(adj, ~ if(length(.x) == 0) "" else paste(dat2$clues_to_this_spot[.x], collapse = " | "))
+    );
 };
 
 # Write outputs ----
@@ -326,5 +354,5 @@ if(Sys.which("dot") != ""){
   warning("Graphviz 'dot' not found; SVG not generated.");
 }
 
-clue_table <- build_clue_table(dat2, adj);
+clue_table <- build_clue_table(dat0, dat2, adj);
 rio::export(clue_table, spreadsheet_path);

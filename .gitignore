@@ -4,7 +4,6 @@
 .Ruserdata
 service-account.json
 sheet_id.txt
-
 # Editor and output artifacts
 output/
 .vscode/**
@@ -25,3 +24,5 @@ output/
 .vscode/**/*.bak
 .vscode/**/*.swp
 .vscode/**/*.DS_Store
+*/Rplot*.*
+Rplot*.*

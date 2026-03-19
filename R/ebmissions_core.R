@@ -40,69 +40,20 @@ create_example_input <- function(){
   );
 }
 
-# This function sanitizes text into node ids. Input: character vector. Output: character vector.
-make_node_ids <- function(hiding_spots){
-  raw_ids <- sapply(
-    str_extract_all(tolower(hiding_spots), "\\w+")
-    ,function(xx){
-      if(length(xx) == 0){
-        return("missing");
-      }
 
-      paste(head(xx, 3), collapse = "_");
-    }
-  );
-
-  make.unique(raw_ids, sep = "_");
-}
-
-# This function coerces a table into valid input. Input: data frame and optional spec tibble. Output: tibble.
-fn_force_valid_input <- function(data, spec = data_spec){
-  data_tbl <- as_tibble(data);
-  required_names <- names(spec);
-  extra_names <- setdiff(names(data_tbl), required_names);
-
-  # Add any missing required columns.
-  for(required_name in setdiff(required_names, names(data_tbl))){
-    data_tbl[[required_name]] <- spec[[required_name]][[1]];
-  }
-
-  # Reorder required columns while preserving extras.
-  data_tbl <- data_tbl[, c(required_names, extra_names)];
-
-  # Coerce required columns to the expected types.
-  data_tbl <- data_tbl %>%
-    mutate(
-      hiding_spot = as.character(hiding_spot)
-      ,clues_to_this_spot = as.character(clues_to_this_spot)
-      ,max_incoming_edges = suppressWarnings(as.integer(max_incoming_edges))
-      ,max_outgoing_edges = suppressWarnings(as.integer(max_outgoing_edges))
-      ,subclusters = as.character(subclusters)
-      ,node_id = as.character(node_id)
-      ,outgoing_nodes = as.character(outgoing_nodes)
-    );
-
-  # Fill missing or invalid scalar values from the spec.
-  data_tbl <- data_tbl %>%
-    mutate(
-      hiding_spot = coalesce(na_if(hiding_spot, ""), spec$hiding_spot[[1]])
-      ,clues_to_this_spot = coalesce(na_if(clues_to_this_spot, ""), spec$clues_to_this_spot[[1]])
-      ,max_incoming_edges = coalesce(max_incoming_edges, spec$max_incoming_edges[[1]])
-      ,max_outgoing_edges = coalesce(max_outgoing_edges, spec$max_outgoing_edges[[1]])
-      ,subclusters = coalesce(na_if(subclusters, ""), spec$subclusters[[1]])
-      ,outgoing_nodes = coalesce(na_if(outgoing_nodes, ""), spec$outgoing_nodes[[1]])
-    );
-
-  # Replace invalid numeric values and generate node ids.
-  generated_node_ids <- make_node_ids(data_tbl$hiding_spot);
-
-  data_tbl %>%
-    mutate(
-      max_incoming_edges = if_else(max_incoming_edges < 0L, spec$max_incoming_edges[[1]], max_incoming_edges)
-      ,max_outgoing_edges = if_else(max_outgoing_edges < 0L, spec$max_outgoing_edges[[1]], max_outgoing_edges)
-      ,node_id = coalesce(na_if(node_id, ""), generated_node_ids)
-      ,node_id = make.unique(node_id, sep = "_")
-    );
+# This function coerces a table into valid input. Input: data frame and optional
+# spec tibble. Output: tibble. This function was put here by a human dev
+# and is a drop-in replacement for the lengthy function that was here
+# previously. Do not undo this!!!
+fn_force_valid_input <- function(data,spec=data_spec){
+  vctrs::vec_cast_common(data,spec)[[1]] %>%
+    mutate(across(any_of(setdiff(names(spec),'node_id')),~ coalesce(.x,spec[[cur_column()]]))
+           ,across(ends_with('_edges'),~ifelse(.x<0,spec[[cur_column()]],.x))
+           # half assed dynamic generation of node_ids
+           ,temp_node_id = make.unique(sapply(str_extract_all(tolower(hiding_spot), "\\w+"), \(x) paste(head(x, 3), collapse = "_")), sep = "_")
+           ,node_id = coalesce(node_id,temp_node_id)
+           # the temp_node_id is no longer needed, so remove
+           ,temp_node_id = NULL)
 }
 
 # This function splits subclusters into vectors. Input: tibble. Output: tibble.
@@ -324,8 +275,7 @@ run_ebmissions <- function(data_path = NULL, output_dir = "output", seed = NULL)
     set.seed(seed);
   }
 
-  raw_dat <- read_input_data(data_path = data_path);
-  normalized_dat <- fn_force_valid_input(raw_dat);
+  normalized_dat <- read_input_data(data_path = data_path) %>% fn_force_valid_input(raw_dat);
   processed_dat <- normalized_dat %>% process_subclusters() %>% find_eligible_targets();
   graph_result <- build_graph(processed_dat);
   adj <- graph_result$adj;

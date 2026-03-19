@@ -36,7 +36,7 @@ At a minimum, contributors should have:
 ## R style conventions
 
 - Terminate expressions with semicolons in project R files.
-- Prefer descriptive variable names instead of single-character names.
+- Prefer descriptive variable names instead of single-character names. For temporary index variables where single letters like 'x', 'y', 'i', 'j', etc. are traditionally used, instead double them, e.g. 'xx', 'yy', 'ii', 'jj'.
 - Add a short purpose / input / output comment immediately above each function.
 - In larger functions, separate major steps with blank lines and a brief step comment.
 - Prefer pipelines where they improve readability.

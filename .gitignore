@@ -6,5 +6,22 @@ service-account.json
 sheet_id.txt
 
 # Editor and output artifacts
-.vscode/
 output/
+.vscode/**
+!.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.vscode/**/*.db
+.vscode/**/*.sqlite
+.vscode/**/*.sqlite-journal
+.vscode/**/*.log
+.vscode/**/*.tmp
+.vscode/**/*.cache
+.vscode/**/*.vsix
+.vscode/**/*.zip
+.vscode/**/*.gz
+.vscode/**/*.tar
+.vscode/**/*.tgz
+.vscode/**/*.bak
+.vscode/**/*.swp
+.vscode/**/*.DS_Store

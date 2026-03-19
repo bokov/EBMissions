@@ -13,7 +13,7 @@ The recommended development environment is the checked-in dev container / GitHub
 At a minimum, contributors should have:
 
 - R
-- the CRAN packages installed by the dev container and CI
+- the CRAN packages required by this code
 - GitHub CLI (`gh`) if they want to create or resolve GitHub issues from the terminal
 
 ## Local workflow
@@ -26,7 +26,7 @@ At a minimum, contributors should have:
 
 ## Coding expectations
 
-- Keep repo-wide workflow guidance in this file so it stays useful to humans, Copilot, and other coding agents.
+- Keep repo-wide workflow guidance in this file so it stays useful to humans, Copilot, Codex, and other coding agents.
 - Keep code-specific R conventions in the source files where they are most relevant.
 - Prefer small, reviewable pull requests.
 - If code behavior changes, update any affected documentation and issue acceptance criteria in the same change.
@@ -36,7 +36,7 @@ At a minimum, contributors should have:
 ## R style conventions
 
 - Terminate expressions with semicolons in project R files.
-- Prefer descriptive variable names instead of single-character names.
+- Prefer descriptive variable names instead of single-character names. For temporary index variables where single letters like 'x', 'y', 'i', 'j', etc. are traditionally used, instead double them, e.g. 'xx', 'yy', 'ii', 'jj'.
 - Add a short purpose / input / output comment immediately above each function.
 - In larger functions, separate major steps with blank lines and a brief step comment.
 - Prefer pipelines where they improve readability.

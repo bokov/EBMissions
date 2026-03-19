@@ -295,7 +295,9 @@ write_svg_graph <- function(dat, adj, svg_path){
     ,edge.color = "#555555"
   );
 
-  svg_path;
+  # nobody cares about svg_path, but the graph object and the ingredients that
+  # went into making it are useful, so that's what we'll return
+  list(vertices_tbl=vertices_tbl,edges_tbl=edges_tbl,graph_layout=graph_layout,graph_obj=graph_obj);
 }
 
 # This function builds the output clue table. Input: normalized input and adjacency list. Output: tibble.
@@ -337,7 +339,7 @@ run_ebmissions <- function(data_path = NULL, output_dir = "output", seed = NULL)
   csv_path <- file.path(output_dir, "clue_graph.csv");
 
   writeLines(build_dot_string(processed_dat, adj), dot_path);
-  write_svg_graph(processed_dat, adj, svg_path);
+  graph_stuff <- write_svg_graph(processed_dat, adj, svg_path);
   clue_table <- build_clue_table(normalized_dat, adj);
   rio::export(clue_table, csv_path);
 
@@ -346,6 +348,7 @@ run_ebmissions <- function(data_path = NULL, output_dir = "output", seed = NULL)
     ,svg_path = svg_path
     ,csv_path = csv_path
     ,clue_table = clue_table
+    ,graph_stuff = graph_stuff
     ,graph_valid = graph_result$is_valid
   );
 }

@@ -24,7 +24,6 @@ The script generates:
 
 ## Development
 
-The recommended development environment is the checked-in dev container / GitHub Codespaces configuration.
 
 Common validation commands:
 

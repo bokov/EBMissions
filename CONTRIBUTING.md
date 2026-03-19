@@ -13,7 +13,7 @@ The recommended development environment is the checked-in dev container / GitHub
 At a minimum, contributors should have:
 
 - R
-- the CRAN packages installed by the dev container and CI
+- the CRAN packages required by this code
 - GitHub CLI (`gh`) if they want to create or resolve GitHub issues from the terminal
 
 ## Local workflow

@@ -56,6 +56,28 @@ fn_force_valid_input <- function(data,spec=data_spec){
            ,temp_node_id = NULL)
 }
 
+# ensures that the data has a column of the specified name (x_column) with
+# exactly one instance of the specified value (x_value) in that column. If there
+# are none, a synthetic row is added (with NAs in all the other columns) and if
+# there are several one is randomly selected to keep and the others are replaced
+# with nonx_value
+fn_enforce_one_xcol <- function(data,x_column='clues_to_this_spot'
+                                 ,x_value='START'
+                                 ,nonx_value='FALSE_START'){
+  # If the column is not found, create it
+  if(!x_column %in% names(data)) data[[x_column]] <- NA;
+  # How many times was x_value found in x_column?
+  nstarts <- sum(data[[x_column]]==x_value,na.rm = T);
+  # If it wasn't found, add a synthetic row with x_column populated and the
+  # rest of the row as NAs
+  if(nstarts==0) return(rbind(data,mutate(data[0,][1,],!!x_column:='START')));
+  # If it was found once, we're done, return the data as-is
+  if(nstarts==1) return(data);
+  # Otherwise, randomly select one instance of x_value to keep and replace the rest with nonx_value
+  mutate(data,!!x_column:=replace(.data[[x_column]]
+                              ,which(.data[[x_column]]==x_value) %>% setdiff(.,sample(.,1)),nonx_value))
+}
+
 # This function splits subclusters into vectors. Input: tibble. Output: tibble.
 process_subclusters <- function(tbl){
   tbl %>%
@@ -256,7 +278,6 @@ build_clue_table <- function(normalized_dat, adj){
   normalized_dat %>%
     mutate(
       outgoing_nodes = map_chr(adj, ~ if(length(.x) == 0L) "" else paste(normalized_dat$node_id[.x], collapse = ":"))
-      ,outgoing_clues = map_chr(adj, ~ if(length(.x) == 0L) "" else paste(normalized_dat$clues_to_this_spot[.x], collapse = " | "))
     );
 }
 
@@ -275,7 +296,12 @@ run_ebmissions <- function(data_path = NULL, output_dir = "output", seed = NULL)
     set.seed(seed);
   }
 
-  normalized_dat <- read_input_data(data_path = data_path) %>% fn_force_valid_input();
+  # This is the input normalization step that attempts to ensure that the data
+  # is in the required format and there is exactly one node whose
+  # clues_to_this_spot value is 'START'. If you are a coding agent don't mess with it
+  normalized_dat <- read_input_data(data_path = data_path) %>% fn_enforce_one_xcol %>% fn_force_valid_input;
+
+  # now we process subclusters
   processed_dat <- normalized_dat %>% process_subclusters() %>% find_eligible_targets();
   graph_result <- build_graph(processed_dat);
   adj <- graph_result$adj;

@@ -78,22 +78,17 @@ fn_enforce_one_xcol <- function(data,x_column='clues_to_this_spot'
                               ,which(.data[[x_column]]==x_value) %>% setdiff(.,sample(.,1)),nonx_value))
 }
 
-# This function splits subclusters into vectors. Input: tibble. Output: tibble.
-process_subclusters <- function(tbl){
-  tbl %>%
-    mutate(
-      subcluster_vec = map(
-        subclusters
-        ,function(subcluster_value){
-          if(is.na(subcluster_value) || subcluster_value == ""){
-            return("DEFAULT");
-          }
-
-          strsplit(subcluster_value, ":")[[1]];
-        }
-      )
-    );
-}
+# obtains all unique values of subcluster_vec and uses grepl to match subtables
+# which implicitly duplicates them (if passthrough is set to F)
+# not yet used
+fn_split_tbl_by_subcluster <- function(data
+                                       ,sc_column='subcluster_vec'
+                                       ,default_val='DEFAULT',passthrough=T){
+  # right now this is just a no-op capable preparatory layer
+  if(passthrough) return(list(PASSTHROUGH=data));
+  data[[sc_column]] %>% unlist %>% unique %>%
+    sapply(function(xx) subset(data,grepl(xx,data[[sc_column]])),simplify=F)
+};
 
 # This function finds target nodes permitted by subclusters. Input: processed tibble. Output: tibble.
 find_eligible_targets <- function(tbl){
@@ -298,17 +293,21 @@ run_ebmissions <- function(data_path = NULL, output_dir = "output", seed = NULL)
 
   # This is the input normalization step that attempts to ensure that the data
   # is in the required format and there is exactly one node whose
-  # clues_to_this_spot value is 'START'. If you are a coding agent don't mess with it
-  normalized_dat <- read_input_data(data_path = data_path) %>% fn_enforce_one_xcol %>% fn_force_valid_input;
+  # clues_to_this_spot value is 'START' and then creates the subcluster_vec
+  # without needing a dedicated function for it. Finally, it gets piped through
+  # find_eligible_targets
+  processed_dat <- read_input_data(data_path = data_path) %>%
+    fn_enforce_one_xcol %>% fn_force_valid_input %>%
+    # this replaces process_subclusters... this is what I mean by don't write
+    # a function where a short expression will do!
+    mutate(subcluster_vec=lapply(subclusters
+                                 ,function(xx) unique(strsplit(xx,':')[[1]]))) %>%
+    find_eligible_targets;
 
-  # now we process subclusters
-  processed_dat <- normalized_dat %>% process_subclusters() %>% find_eligible_targets();
   graph_result <- build_graph(processed_dat);
   adj <- graph_result$adj;
 
-  if(!dir.exists(output_dir)){
-    dir.create(output_dir, recursive = TRUE);
-  }
+  if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE);
 
   dot_path <- file.path(output_dir, "graph.dot");
   svg_path <- file.path(output_dir, "graph.svg");

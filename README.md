@@ -35,4 +35,4 @@ Rscript main.R --seed=42 --output=output
 See `CONTRIBUTING.md` for contributor workflow and GitHub issue / pull request guidance.
 
 [![Test coverage](https://raw.githubusercontent.com/bokov/EBMissions/coverage/badges/coverage.svg)](https://github.com/bokov/EBMissions/actions/workflows/test-coverage.yaml)
-[![Tests](https://github.com/bokov/EBMissions/actions/workflows/ci.yml/badge.svg)](https://github.com/bokov/EBMissions/actions/workflows/ci.yml)
+[![Tests](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)

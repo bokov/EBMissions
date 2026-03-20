@@ -271,9 +271,9 @@ write_svg_graph <- function(dat, adj, svg_path){
 # This function builds the output clue table. Input: normalized input and adjacency list. Output: tibble.
 build_clue_table <- function(normalized_dat, adj){
   normalized_dat %>%
-    mutate(
-      outgoing_nodes = map_chr(adj, ~ if(length(.x) == 0L) "" else paste(normalized_dat$node_id[.x], collapse = ":"))
-    );
+    mutate(outgoing_nodes = map_chr(adj, ~ if(length(.x) == 0L) "" else paste(normalized_dat$node_id[.x], collapse = ":"))) %>%
+    # get rid of the internal list tables used by build_graph
+    select(where(is.atomic));
 }
 
 # This function reads input data or creates sample data. Input: optional path. Output: tibble.

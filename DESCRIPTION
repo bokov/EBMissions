@@ -1,6 +1,0 @@
-Package: E26
-Version: 0.1.0
-Title: Short Description of the Package
-Description: This package processes a CSV file to create a directed graph.
-License: MIT
-Imports: shiny, tidyverse, googlesheets4, shinyjs, cookies, bslib, ggplot2, rio, igraph

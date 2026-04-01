@@ -118,11 +118,13 @@ fn_grph2df <- function(grph){
 
 # make a data.frame from the nodes and vertices obtained from visNetwork
 fn_ne2df <- function(nodes,edges){
-  nodes <- mutate(nodes,name=id,id=NULL) %>% relocate(name);
-  group_by(edges,from) %>%
+  nodes <- mutate(nodes,name=id,id=NULL) %>%
+    relocate(name);
+  out <- group_by(edges,from) %>%
     summarise(outgoing_nodes=paste0(to,collapse=':')
               ,outgoing_clues=paste0(label,collapse=':')) %>%
     left_join(nodes,.,by=c(name='from'))
+  if('border' %in% names(out)) rename(out, frame.color=border) else out;
 }
 
 # creates a data.frame of various useful graph properties
@@ -169,14 +171,14 @@ fn_grphConnLinear <- function(grph){
     # re-run fn_grph_details
   }
   # mark subclusters with contour color
-  V(grph)$frame.color <- rainbow(3)[factor(V(grph)$subcluster)];
+  V(grph)$frame.color <- rainbow(length(unique(V(grph)$subcluster)))[factor(V(grph)$subcluster)];
   # a hacky way to make sure all edges are labeled
   fn_grph2df(grph) %>% fn_df2grph();
 }
 
 fn_grph_vnEdit <- function(grph,df,resultname='vnedit_out'){
   # 1. Prepare data
-  v_data <- toVisNetworkData(grph);
+  v_data <- toVisNetworkData(grph,idToLabel = F);
 
   ui <- fluidPage(
     visNetworkOutput("network", height = "80vh"),
@@ -185,7 +187,10 @@ fn_grph_vnEdit <- function(grph,df,resultname='vnedit_out'){
 
   server <- function(input, output, session) {
     output$network <- renderVisNetwork({
-      visNetwork(v_data$nodes, v_data$edges) %>% visEdges(arrows = "to") %>%
+      visNetwork(v_data$nodes %>% rename(color.border=frame.color)
+                 , v_data$edges ) %>%
+        visEdges(arrows = "to", font=list(align='top',size=8),widthConstraint=list(maximum=80)) %>%
+        visNodes(shape='box',widthConstraint = list(maximum = 70),size = 70, font = list(size = 12)) %>%
         visOptions(manipulation = TRUE) # This enables the 'Delete' toolbar
     });
 
